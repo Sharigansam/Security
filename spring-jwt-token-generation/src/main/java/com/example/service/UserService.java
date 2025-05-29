@@ -3,6 +3,7 @@ package com.example.service;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import com.example.dto.ChangePasswordDto;
@@ -13,6 +14,9 @@ import com.example.repo.UserRepository;
 
 @Service
 public class UserService {
+	
+	@Autowired
+	BCryptPasswordEncoder bCryptPasswordEncoder;
 
 	@Autowired
 	UserRepository userRepository;
@@ -23,7 +27,7 @@ public class UserService {
 
 			return "Email Already Existed";
 		} else {
-			UserInformation userDetails = new UserInformation(userInformation.getEmailId(), userInformation.getPassword(),
+			UserInformation userDetails = new UserInformation(userInformation.getEmailId(), bCryptPasswordEncoder.encode(userInformation.getPassword()),
 					userInformation.getMobileNumber(), userInformation.getUserName());
 			userRepository.save(userDetails);
 
@@ -46,21 +50,22 @@ public class UserService {
 		return "Invalid Credentials";
 	}
 
-	public String changePassword(ChangePasswordDto changePasswordDto, String usderId) {
+	public String changePassword(ChangePasswordDto changePasswordDto, String userId) {
 
-		Optional<UserInformation> info = userRepository.findById(usderId);
+		 Optional<UserInformation> info = userRepository.findById(userId);
 
-		if (info.isPresent()) {
-			UserInformation userDetails = info.get();
-			userDetails.setPassword(changePasswordDto.getNewPassword());
-			userRepository.save(userDetails);
+		    if (info.isPresent()) {
+		        UserInformation userDetails = info.get();
 
-			return "password changed successfully";
+		        
+		        String encodedPassword = bCryptPasswordEncoder.encode(changePasswordDto.getNewPassword());
 
-		} else {
+		        userDetails.setPassword(encodedPassword);
+		        userRepository.save(userDetails);
 
-			return "User not found with EmailId : " + usderId;
-		}
+		        return "Password changed successfully";
+		    } 
+		    return "User not found with userId: " + userId;
 
 	}
 
